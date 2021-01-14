@@ -1,4 +1,7 @@
-import 'package:geolocator/geolocator.dart';
+import 'package:geolocator/geolocator.dart';import 'package:clima/services/networkService.dart';
+
+import '../constants.dart';
+
 
 class CurrentLocation {
   static double _latitude, _longitude;
@@ -22,4 +25,12 @@ class CurrentLocation {
   static get longitude => _longitude;
 
   static double get latitude => _latitude;
+
+  static Future<dynamic> getCurrentLocationData() async {
+    await getLocation();
+    var jsonData = await NetworkService.getStats(
+        'https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=$kApiKey&units=metric');
+
+    return jsonData;
+  }
 }

@@ -1,33 +1,61 @@
 import 'package:clima/constants.dart';
+import 'package:clima/screens/cityScreen.dart';
+import 'package:clima/services/currentLocation.dart';
+import 'package:clima/services/networkService.dart';
 import 'package:clima/services/weather.dart';
 import 'package:flutter/material.dart';
 import 'package:weather_icons/weather_icons.dart';
 
-class WeatherMainPage extends StatelessWidget {
+class WeatherMainPage extends StatefulWidget {
   final dynamic jsonData;
 
   WeatherMainPage({this.jsonData});
 
-  // String time = getTime();
-  //
-  // String getTime(){
-  //
-  //   int hour =
-  //
-  // }
+  @override
+  _WeatherMainPageState createState() => _WeatherMainPageState();
+}
+
+class _WeatherMainPageState extends State<WeatherMainPage> {
+  var cityName;
+  String place;
+  int pressure;
+  double windSpeed;
+  int humidity;
+  int temp;
+  DateTime now = DateTime.now();
+  int condition;
+
+  void updateUI(dynamic jsonData) {
+    setState(() {
+      if (jsonData == null) {
+        place = 'Search another place';
+        pressure = 0;
+        windSpeed = 0;
+        humidity = 0;
+        temp = 0;
+        now = DateTime.now();
+        condition = 0;
+
+        return;
+      }
+
+      place = jsonData['name']; //'Riga';
+      place = 'Weather in $place';
+      pressure = jsonData['main']['pressure']; // = 757;
+      windSpeed = jsonData['wind']['speed']; // = 2.5;
+      humidity = jsonData['main']['humidity']; // = 70;
+      var t1 = jsonData['main']['temp']; // = 21
+      temp = t1.toInt(); // ;
+      now = DateTime.now();
+      condition = jsonData['weather'][0]['id'];
+      print(jsonData);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    String place = jsonData['name']; //'Riga';
-    int pressure = jsonData['main']['pressure']; // = 757;
-    double windSpeed = jsonData['wind']['speed']; // = 2.5;
-    int humidity = jsonData['main']['humidity']; // = 70;
-    double t1 = jsonData['main']['temp']; // = 21
-    int temp = t1.toInt(); // ;
-    DateTime now = DateTime.now();
-    int condition = jsonData['weather'][0]['id'];
-
     return MaterialApp(
+      theme: ThemeData(fontFamily: 'Hind'),
       home: Scaffold(
         backgroundColor: kPrimaryColor,
         body: SafeArea(
@@ -59,11 +87,11 @@ class WeatherMainPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
-                            'Weather in $place',
+                            place,
                             style: kHeaderTextStyle,
                           ),
                           Text(
-                            'Now ${now.toString().substring(11, 16)}.',
+                            'At ${now.toString().substring(11, 16)}.',
                             style: kSubHeaderTextStyle,
                           )
                         ],
@@ -83,11 +111,10 @@ class WeatherMainPage extends StatelessWidget {
                                 WeatherModel.getWeatherIcon(condition)),
                           ),
                         ),
-                        Expanded(
-                          flex: 3,
+                        Center(
                           child: Container(
                             child: Text(
-                              '  $temp°',
+                              ' $temp°',
                               style: TextStyle(
                                 fontSize: 150,
                                 fontWeight: FontWeight.bold,
@@ -97,27 +124,78 @@ class WeatherMainPage extends StatelessWidget {
                           ),
                         ),
                         Expanded(
-                          flex: 2,
                           child: Container(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            child: Column(
                               children: [
-                                TextIconCombo(
-                                  text: '$windSpeed m/s',
-                                  icon: WeatherIcons.strong_wind,
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    TextIconCombo(
+                                      text: '$windSpeed m/s',
+                                      icon: WeatherIcons.strong_wind,
+                                    ),
+                                    TextIconCombo(
+                                      text: '$humidity%',
+                                      icon: WeatherIcons.humidity,
+                                    ),
+                                    TextIconCombo(
+                                      text: '$pressure Pa',
+                                      icon: WeatherIcons.barometer,
+                                    )
+                                  ],
                                 ),
-                                TextIconCombo(
-                                  text: '$humidity%',
-                                  icon: WeatherIcons.humidity,
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Container(
+                                          child: FlatButton(
+                                            onPressed: () async {
+                                              dynamic weatherData =
+                                                  await CurrentLocation
+                                                      .getCurrentLocationData();
+                                              updateUI(weatherData);
+                                            },
+                                            child: Icon(
+                                              Icons.near_me,
+                                              color: kConsColor,
+                                              size: 30,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Container(
+                                          child: FlatButton(
+                                            onPressed: () async {
+                                              cityName = await Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          CityPage()));
+
+                                              print(cityName);
+
+                                              if (cityName != null) {
+                                                getCityWeather();
+                                              }
+                                            },
+                                            child: Icon(
+                                              Icons.location_city,
+                                              color: kConsColor,
+                                              size: 30,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                TextIconCombo(
-                                    text: '$pressure mmHg',
-                                    icon: WeatherIcons.barometer)
                               ],
                             ),
                           ),
-                        )
+                        ),
                       ],
                     ),
                   )
@@ -128,6 +206,19 @@ class WeatherMainPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    updateUI(widget.jsonData);
+  }
+
+  void getCityWeather() async {
+    var data = await NetworkService.getStats(
+        'https://api.openweathermap.org/data/2.5/weather?q=$cityName&appid=$kApiKey&units=metric');
+
+    updateUI(data);
   }
 }
 

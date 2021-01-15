@@ -42,7 +42,7 @@ class _WeatherMainPageState extends State<WeatherMainPage> {
       place = jsonData['name']; //'Riga';
       place = 'Weather in $place';
       pressure = jsonData['main']['pressure']; // = 757;
-      windSpeed = jsonData['wind']['speed']; // = 2.5;
+      windSpeed = jsonData['wind']['speed'] + 0.0; // = 2.5;
       humidity = jsonData['main']['humidity']; // = 70;
       var t1 = jsonData['main']['temp']; // = 21
       temp = t1.toInt(); // ;
